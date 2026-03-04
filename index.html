@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>World Map - Publications by Location</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+<style>
+  body { margin:0; background:white; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans TC", sans-serif; }
+  #map { width:100%; height:100vh; }
+
+  /* 右側資訊面板 */
+  #sidePanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 380px;
+    height: 100vh;
+    background: rgba(255,255,255,0.97);
+    border-left: 1px solid rgba(0,0,0,0.08);
+    box-shadow: -12px 0 30px rgba(0,0,0,0.12);
+    padding: 16px 16px;
+    box-sizing: border-box;
+    display: none;
+    overflow: auto;
+    z-index: 9999;
+  }
+  #sidePanel .topbar{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  #sidePanel .title {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0;
+  }
+  #sidePanel .subtitle{
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(17,17,17,0.65);
+    line-height: 1.4;
+  }
+  #sidePanel .closeBtn {
+    border: 1px solid rgba(0,0,0,0.12);
+    background: white;
+    border-radius: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    flex: 0 0 auto;
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(0,0,0,0.08);
+    margin: 12px 0;
+  }
+
+  .pub {
+    padding: 10px 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .pub .pub-title{
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .pub .pub-meta{
+    font-size: 12px;
+    color: rgba(17,17,17,0.68);
+    line-height: 1.4;
+  }
+  .tag {
+    display:inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.06);
+    color: rgba(17,17,17,0.7);
+    margin-right: 6px;
+  }
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<!-- 右側面板 -->
+<div id="sidePanel">
+  <div class="topbar">
+    <div>
+      <div class="title" id="panelTitle">選擇一個點</div>
+      <div class="subtitle" id="panelSubtitle">點擊地圖上的圓點後，這裡會顯示出版品清單。</div>
+    </div>
+    <button class="closeBtn" id="closePanel">關閉</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div id="panelBody"></div>
+</div>
+
+<script>
+/** =====================================================
+ *  ✅ 你以後主要只需要改這段：DATA
+ *  每個 location 代表一個城市/機構/國家據點
+ *  - label: 顯示名稱（建議：城市或機構）
+ *  - country: 國家（可選）
+ *  - lat/lon: 座標
+ *  - color: 點的顏色
+ *  - count: 用來調整圓大小（可用 publications.length）
+ *  - publications: 該點的出版品陣列
+ *      - title / source / year （你提供的格式）
+ *      - url 可選（未來可做成可點連結）
+ *  ===================================================== */
+var locations = [
+  {
+    id: "beijing",
+    label: "Beijing",
+    country: "China",
+    lat: 39.90571,
+    lon: 116.39130,
+    color: "#F75000",
+    publications: [
+      { title: "We the People, Vol. 3: The Civil Rights Revolution", source: "Harvard University Press", year: 2014, translations: "Chinese: China University of Law and Political Science Press, 2019."},
+      { title: "We the People, Vol 2: Transformations", source: "Harvard University Press", year: 1998, translations: "Chinese: Law Press China, 2004; new translation, China University of Law and Political Science Press, 2013."},
+      { title: "The Future of Liberal Revolution", source: "Yale University Press", year: 1992, translations: "Chinese: China University of Law and Political Science Press, 2014."},
+      { title: "We the People, Vol 1: Foundations", source: "Harvard University Press", year: 1991, translations: "Chinese: China Law Press, 2004; Chinese: new translation, China University of Law and Political Science Press, 2013."},
+      { title: "Preface, We the People: Foundations", year: 2013, translations: "Chinese edition: The Collected Works of Bruce Ackerman, 2013."},
+      { title: "The New Separation of Powers", source: "Harvard Law Review vol.113, pp.633-729", year:2000, translations: "Chinese: Constitutionalism Review, vol. 3, pp. 600-704 (2003); Chinese (2006)."},
+      { title: "Beyond Carolene Products", source: "Harvard Law Review, vol. 98, pp. 713-46", year: 1985, translations: "Chinese: Selected Essays on Constitutional Law from the Harvard Law Review: 2005."},
+      { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014, translations: "Chinese translation: Huffington Post."},
+
+    ]
+  },
+  {
+    id: "nanjing",
+    label: "Nanjing",
+    country: "China",
+    lat: 32.04383,
+    lon: 118.77886,
+    color: "#F75000",
+    publications: [
+      { title: "Social Justice in the Liberal State", source: "Yale University Press", year: 1980, translations: "Chinese:Yilin Press, 2015."},
+    ]
+  },
+  {
+    id: "jiangsu",
+    label: "Jiangsu",
+    country: "China",
+    lat: 33.00000,
+    lon: 120.00000,
+    color: "#F75000",
+    publications: [
+      { title: "The Rise of World Constitutionalism", source: "University of Virginia Law Review, vol. 83, pp. 771-797 [reprinted as Dean’s Occasional Paper, Yale Law School (October, 1997)]", year: 1997, translations: "Chinese: Nanjing Univ. Law Rev. 10-27 (2001)."},
+    ]
+  },
+  {
+    id: "madrid",
+    label: "Madrid",
+    country: "Spain",
+    lat: 40.41678,
+    lon: -3.70351,
+    color: "#F75000",
+    publications: [
+      { title: "Before the Next Attack", source: "Yale University Press", year: 2006, translations: "Spanish: 2007."},
+      { title: "Social Justice in the Liberal State", source: "Yale University Press", year: 1980, translations: "Spanish: Centro de Estudios Constitutionales, 1993."},
+      { title: "Tres hipotesis sobre las proxima crisis constitutional", source: "4-19", year:2011},
+      { title: "The New Separation of Powers", source: "Harvard Law Review vol.113, pp.633-729", year:2000, translations: "Spanish (2004)."},
+      { title: "An Astonishing Blunder at Last Week’s Supreme Court Argument", source: "The Hil", year: 2024, translations: "panish translation: Un asombroso error del abogado de Trump en el alegato de la semana pasada ante el Tribunal Supremo, El Salto, February 20, 2024."},
+      { title: "Trump’s Supreme Court Justices Must Kick Him Off the Ballot", source: "Politico", year: 2024, translations: "Spanish translation: Los jueces del Tribual Supremo nominados por Trump deben expulsarle de la carrera presidencial, El Salto, January 30, 2024."},
+      { title: "A Democratic Answer to the Tragedy in Barcelona? (with Antoni Abat I Ninet)", source: " El Pais", year: 2017},
+      { title: "La Izquierda Carece de Programa Político Para el Siglo XXI", source: "Ct-xt-esp", year: 2017},
+    ]
+  },
+  {
+    id: "barcelona",
+    label: "Barcelona",
+    country: "Spain",
+    lat: 41.38258,
+    lon: 2.17707,
+    color: "#F75000",
+    publications: [
+      { title: "La Politica del Dialogo Liberal", source: "Gedisa", year: 1999},
+      { title: "The Future of Liberal Revolution", source: "Yale University Press", year: 1992, translations: "Spanish: Ariel, 1995."},
+    ]
+  },
+  {
+    id: "barcelona",
+    label: "Barcelona",
+    country: "Spain",
+    lat: 41.38258 + 0.8,
+    lon: 2.17707 + 0.8,
+    color: "#0066CC",
+    publications: [
+      { title: "A Democratic Answer to the Tragedy in Barcelona? (with Antoni Abat I Ninet)", source: "El Pais", year: 2017},
+    ]
+  },
+  {
+    id: "kraków",
+    label: "Kraków",
+    country: "Poland",
+    lat: 50.04694,
+    lon: 19.99715,
+    color: "#F75000",
+    publications: [
+      { title: "The Future of Liberal Revolution", source: "Yale University Press", year: 1992, translations: "Polish: Terminus, 1996."},
+    ]
+  },
+  {
+    id: "são paulo",
+    label: "São Paulo",
+    country: "Brazil",
+    lat: -23.55065,
+    lon: -46.63338,
+    color: "#F75000",
+    publications: [
+      { title: "We the People, Vol 1: Foundations", source: "Harvard University Press", year: 1991, translations: "Portuguese: Del Rey, 2006."},
+      { title: "Mentiras de Trump Acirram Alienação Nos EUA", source: " Folha de S. Paulo", year: 2017},
+    ]
+  },
+  {
+    id: "rio de Janeiro",
+    label: "Rio de Janeiro",
+    country: "Brazil",
+    lat: -22.91101,
+    lon: -43.20937,
+    color: "#F75000",
+    publications: [
+      { title: "O Novo Constitucionalismo Mundial", source: "in Margarida Maria Lacombe Camargo, 1988-1998, Uma Decada de Constituicao", year: 1999},
+    ]
+  },
+  {
+    id: "rio de Janeiro",
+    label: "Rio de Janeiro",
+    country: "Brazil",
+    lat: -22.91101 + 1.5,
+    lon: -43.20937 + 1.5,
+    color: "#0066CC",
+    publications: [
+      { title: "Brazil’s Constitutional Dilemma in Comparative Perspective: Do Chile & Spain Cast Light on the Bolsonaro Crisis", source: "The Blog of the International Journal of Constitutional Law", year: 2020},
+    ]
+  },
+    {
+    id: "brasilia",
+    label: "Brasília",
+    country: "Brazil",
+    lat:  -10.33333,
+    lon:  -53.20000,
+    color: "#0066CC",
+    publications: [
+      { title: "Brazil Needs a New Constitution", source: "Correio Braziliense", year: 2020},
+      { title: "La Cour suprême brésilienne a le devoir de libérer Lula et d’annuler sa condamnation (The Brazilian Supreme Court Has the Duty to Free Lula from Prison and Annul His Conviction)", year: 2019},
+    ]
+  },
+  {
+    id: "Puebla",
+    label: "Puebla",
+    country: "Mexico",
+    lat: 18.83333,
+    lon:  -98.00000,
+    color: "#F75000",
+    publications: [
+      { title: "Why Dialogue?", source: " Journal of Philosophy, vol. 86, pp. 5-22", year: 1989, translations: "Spanish: Metapolitica vol. 2, no. 6, pp. 207-22 (1998)."},
+    ]
+  },
+  {
+    id: "santiago",
+    label: "Santiago",
+    country: "Chile",
+    lat: -33.43770,
+    lon: -70.65107,
+    color: "#F75000",
+    publications: [
+      { title: "Adios Montesquieu", source: "Revista del Centro de Estudios Constitutionales, Vol. 5, Num. 9. Pp. 3-14", year: 2019},
+      { title: "Bruce Ackerman, jurista de Yale: “La ansiedad por falta de sentido lleva a votar por el demagogo (by Paula Escobar-Chavarria)", source: "La Tercera", year: 2024},
+    ]
+  },
+  {
+    id: "santiago",
+    label: "Santiago",
+    country: "Chile",
+    lat: -33.43770 + 1.3,
+    lon: -70.65107 + 1.3,
+    color: "#0066CC",
+    publications: [
+      { title: "Presentation to the Chilean Constituent Assembly", source: "States of Emergency at https://youtu.be/-E732fgCOuI", year: 2023},
+    ]
+  },
+  {
+    id: "frankfurt",
+    label: "Frankfurt",
+    country: "Germany",
+    lat: 50.11064,
+    lon: 8.68209,
+    color: "#F75000",
+    publications: [
+      { title: "The Stakeholder Society (with Anne Alstott)", source: "Yale University Press", year: 1999, translations: "German translation: Campus, 2001; developed further by Offe, Grozinger, & Maschke, Die Teilhabegesellschaft - Modell eines neuen Wohlfahrtsstaates (Campus, 2006)."},
+      { title: "Von der Revolution zur Verfassung", source: "Transit: Europaische Revue, vol. 4, pp. 46-61", year: 1992},
+      { title: "Law, Economics, and the Problem of Legal Culture", source: "Duke Law Journal, vol. 6, pp 929-947", year: 1986, translations: "German: Schäfer and Wehrt eds., Die Ökonomisierung der Sozialwissenschaften [Campus: 1988]."},
+      { title: "Verfassungsrechtler über Trump: Amerika ist wie die Weimarer Republik", source: "Die Frankfurter Allgemeine Zeitung", year: 2020},
+    ]
+  },
+  {
+    id: "göttingen",
+    label: "Göttingen",
+    country: "Germany",
+    lat: 51.53283,
+    lon: 9.93518,
+    color: "#F75000",
+    publications: [
+      { title: "Populismus heisst Angst vor dem Volk", source: "in Die Alte und die Neue Welt (Scherer and Arnold eds.)", year: 2008},
+    ]
+  },
+  {
+    id: "munich",
+    label: "Munich",
+    country: "Germany",
+    lat: 48.13711,
+    lon: 11.57538,
+    color: "#F75000",
+    publications: [
+      { title: "The Future of Liberal Revolution", source: "Yale University Press", year: 1992, translations: "German: Ein neuer Anfang fuer Europa, Siedler: 1993."},
+      { title: "Der neue Nato-deal", source: "Süddeutsche Zeitung", year: 2017},
+      { title: "Europa, hilf dir selbst! (Europe, Take Care of Yourself!)", source: "Sueddeutsche Zeitung", year: 2015},
+      { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014, translations: "German translation: Huffington Post."},
+    ]
+  },
+  {
+    id: "berlin",
+    label: "Berlin",
+    country: "Germnay",
+    lat: 52.51739,
+    lon: 13.39513,
+    color: "#F75000",
+    publications: [
+      { title: "Die Zukunft der Liberalen Revolution", source: "Die Neue Gesellschaft/Frankfurter Hefte, vol. 39, no. 3. pp.221-231", year: 1992},
+    ]
+  },
+  {
+    id: "berlin",
+    label: "Berlin",
+    country: "Germnay",
+    lat: 52.51739 + 1.3,
+    lon: 13.39513 + 1.3,
+    color: "#0066CC",
+    publications: [
+      { title: "Germany’s Failure of Vision", source: "New York Times", year: 2015},
+      { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014},
+    ]
+  },
+  {
+    id: "hamburg",
+    label: "Hamburg",
+    country: "Germnay",
+    lat: 53.55034,
+    lon: 10.00065,
+    color: "#F75000",
+    publications: [
+      { title: "Es ist Wirklich Ernst", source: "Die Zeit", year: 2016},
+    ]
+  },
+  {
+    id: "bucharest",
+    label: "Bucharest",
+    country: "Romania",
+    lat: 44.43614,
+    lon: 26.10268,
+    color: "#F75000",
+    publications: [
+      { title: "Der neue Nato-deal", source: "Süddeutsche Zeitung", year: 2017, translations: " Romanian Translation: România Curată."},
+    ]
+  },
+  {
+    id: "braga",
+    label: "Braga",
+    country: "Portugal",
+    lat: 41.55106,
+    lon: -8.42800,
+    color: "#F75000",
+    publications: [
+      { title: "Em Defesa de uma Heranca Social de Cidadania", source: "in Joao Cardoso Rosas ed., Ideias e Politicas para o Nosso Tempo, pp. 25-40", year: 2004},
+    ]
+  },
+  {
+    id: "rome",
+    label: "Rome",
+    country: "Italy",
+    lat: 41.89332 + 0.8,
+    lon: 12.48293 + 0.8,
+    color: "#5B4B00",
+    publications: [
+      { title: "Malagodi Prize Lecture"},
+      { title: "Visiting Professor, University of Rome"}
+    ]
+  },
+  {
+    id: "rome",
+    label: "Rome",
+    country: "Italy",
+    lat: 41.89332,
+    lon: 12.48293,
+    color: "#F75000",
+    publications: [
+      { title: "Before the Next Attack", source: "Yale University Press", year: 2006, translations: "Italian: 2008."},
+      { title: "The New Separation of Powers", source: "Harvard Law Review vol.113, pp.633-729", year:2000, translations: "Italian: Carocci (2003)."},
+    ]
+  },
+  {
+    id: "bologna",
+    label: "Bologna",
+    country: "Italy",
+    lat: 44.49382,
+    lon: 11.34263,
+    color: "#F75000",
+    publications: [
+      { title: "Social Justice in the Liberal State", source: "Yale University Press", year: 1980, translations: "Italian: Il Mulino, 1984."},
+      { title: "Crediting the Voters: A New Beginning for Campaign Finance, American Prospect pp. 71-80 (reprinted in Burnham, The American Prospect: Reader in American Politics, pp. 218-31 (1994))", year: 1993, translations: "(Italian: Politica del Diritto, vol. 24, pp. 647-664 (1993)."},
+    ]
+  },
+  {
+    id: "naples",
+    label: "Naples",
+    country: "Italy",
+    lat: 40.83588,
+    lon: 14.24877,
+    color: "#F75000",
+    publications: [
+      { title: "Law, Economics, and the Problem of Legal Culture", source: "Duke Law Journal, vol. 6, pp 929-947", year: 1986, translations: "Italian: Rivista Critica di Diritto Privato."},
+    ]
+  },
+  {
+    id: "florence",
+    label: "Florence",
+    country: "Italy",
+    lat: 43.76980 + 1,
+    lon: 11.25564 + 1,
+    color: "	#5B4B00",
+    publications: [
+      { title: "Max Weber Lecture, European University Institute"},
+    ]
+  },
+  {
+    id: "florence",
+    label: "Florence",
+    country: "Italy",
+    lat: 43.76980,
+    lon: 11.25564,
+    color: "#F75000",
+    publications: [
+      { title: "La guerra all'Isis legittima il Califfo", source: "Lettera 43", year: 2015},
+    ]
+  },
+  {
+    id: "torino",
+    label: "Torino",
+    country: "Italy",
+    lat: 45.06776,
+    lon: 7.68249,
+    color: "#F75000",
+    publications: [
+      { title: "Why Dialogue?", source: "Journal of Philosophy, vol. 86, pp. 5-22", year: 1989, translations: "Italian: Teoria Politica (1989)."},
+    ]
+  },
+  {
+    id: "vienna",
+    label: "Vienna",
+    country: "Austria",
+    lat: 48.20835 + 0.8,
+    lon: 16.37250 + 0.8,
+    color: "#5B4B00",
+    publications: [
+      { title: "Research Scholar, International Institute for Applied Systems Analysis"},
+    ]
+  },
+  {
+    id: "vienna",
+    label: "Vienna",
+    country: "Austria",
+    lat: 48.20835,
+    lon: 16.37250,
+    color: "#F75000",
+    publications: [
+      { title: "Why Dialogue?", source: "Journal of Philosophy, vol. 86, pp. 5-22", year: 1989, translations: "German: Akten Des 12, Internationalen Wittgenstein Symposiums pp. 25-35 (1988)."},
+    ]
+  },
+  {
+    id: "bussum",
+    label: "Bussum",
+    country: "Netherlands",
+    lat: 52.27737,
+    lon: 5.16306,
+    color: "#F75000",
+    publications: [
+      { title: "Why Dialogue?", source: "Journal of Philosophy, vol. 86, pp. 5-22", year: 1989, translations: "Dutch: Von den Brink & Von Reijen, Het Recht Van De Moraal pp. 67-84 (1994)."},
+    ]
+  },
+  {
+    id: "leiden",
+    label: "Leiden",
+    country: "Netherlands",
+    lat: 52.15947,
+    lon: 4.49088,
+    color: "#F75000",
+    publications: [
+      { title: "Foreword: Law in an Activist State", source: "Yale Law Journal, vol. 92, pp. 1-45", year: 1983, translations: "Dutch: Het recht in een activistische staat, Staatkundig jaarboek, 1983-1984, pp. 313-328, Leiden, December 1983."},
+    ]
+  },
+  {
+    id: "paris",
+    label: "Paris",
+    country: "France",
+    lat: 48.85350,
+    lon: 2.34839,
+    color: "#F75000",
+    publications: [
+      { title: "We the People, Vol 1: Foundations", source: "Harvard University Press", year: 1991, translations: "French: Au Nom du Peuple, Calmann-Levy, 1998."},
+      { title: "Three Paths to Constitutionalism – and the Crisis of the European Union", source: "45 British Journal of Political Science 705", year: 2015, translations:"French translation (June 2018) : Le Grande Continent." },
+      { title: "Préparer la gestion de l’urgence : pour une «Emergency Constitution»", source: "Archives de Philosophie du droit", year: 2007},
+      { title: "Les pouvoirs d’exception a l’age du terrorisme", source: "Esprit 150-164", year: 2006},
+      { title: "La democratie dualiste", source: "1789 et l'Invention de la Constitution (eds. Michel Troper and Lucien Jaume) pp. 191-204", year: 1994},
+      { title: "La Cour suprême brésilienne a le devoir de libérer Lula et d’annuler sa condamnation", source: "Le Monde", year: 2019},
+      { title: "Face à Trump, comment l’Europe peut protége l’OTAN", source: "Le Monde", year: 2018},
+      { title: "Les Précédents Présidents Étaient des Personnes Sérieuses. Donald Trump ne L’est Pas", source: "Le Nouvel Ordre Mondial", year: 2017},
+      { title: "Is Obama Enabling the Next President to Launch Illegal Wars?", source: "The Atlantic", year: 2016, translations: "French Translation: Jus Politicum (September 2, 2016)."},
+      { title: "La Grèce masque la vraie crise de l’Europe", source: "Le Monde", year: 2015},
+    ]
+  },
+  {
+    id: "paris",
+    label: "Paris",
+    country: "France",
+    lat: 48.85350 + 0.8,
+    lon: 2.34839 + 0.8,
+    color: "#0066CC",
+    publications: [
+      { title: "Hollande’s War Talk Gives Islamic State What it Wants Most", source: "Los Angeles Times", year: 2015},
+      { title: "What We Can Learn From the French About Terrorism", source: "Huffington Post", year: 2015},
+    ]
+  },
+   {
+    id: "aix-en-provence",
+    label: "Aix-en-Provence",
+    country: "France",
+    lat: 43.52984,
+    lon: 5.44747,
+    color: "#F75000",
+    publications: [
+      { title: "Deux Sortes de Recherches en Droit et Economie", source: "in Revue de la Recherche Juridique: Droit Prospectif (Presses Universitaires d'Aix- Marseille", year: 1986},
+    ]
+  },
+  {
+    id: "tokyo",
+    label: "Tokyo",
+    country: "Japan",
+    lat: 35.68,
+    lon: 139.69,
+    color: "#F75000",
+    publications: [
+      { title: "Three Paths to Constitutionalism – and the Crisis of the European Union", source: "45 British Journal of Political Science 705", year: 2015, translations:"Japanese translation: Horitsu Jiho (April 2015)."},
+      { title: "Example paper title B", source: "Journal Y", year: 2021},
+      { title: "Preface, Deliberation Day (with James Fishkin)", source: "Japanese edition", year: 2015},
+      { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014, translations: "Japanese translation: Huffington Post."},
+    ]
+  },
+  {
+    id: "tokyo",
+    label: "Tokyo",
+    country: "Japan",
+    lat: 35.68 + 1.3,
+    lon: 139.69 + 1.3,
+    color: "#0066CC",
+    publications: [
+      { title: "What Shinzo Abe Wants from Washington – And Why He Shouldn’t Get It", source: "Huffington Pos", year: 2015},
+      { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014},
+      { title: "Dishonest Abe (with Tokujin Matsudaira)", source: "Foreign Policy", year: 2014},
+      { title: "A Militarized Japan? (with Tokujin Matsudaira)", source: "Los Angeles Times", year: 2013},
+    ]
+  },
+  {
+    id: "kyoto",
+    label: "Kyoto",
+    country: "Japan",
+    lat: 35.01158,
+    lon: 135.76814,
+    color: "#5B4B00",
+    publications: [
+      { title: "Kyoto Seminar in American Studies"},
+    ]
+  },
+  {
+    id: "london",
+    label: "London",
+    country: "UK",
+    lat: 51.50,
+    lon: -0.12,
+    color: "#0066CC",
+    publications: [
+      { title: "Is Britain ready for a constitutional convention? A rejoinder", source: "The Political Quarterly", year: 2018},
+      { title: "Why Britain Needs a Written Constitution—and Can't Wait for Parliament to Write One", source: "Political Quarterly", year: 2018},
+      { title: "Britain at the Constitutional Crossroads", source: "British Academy", year: 2016},
+      { title: "Meritocracy v. Democracy (on the reform of the House of Lords)", source: "29 London Review of Books 9", year: 2007},
+      { title: "Britain at the Constitutional Crossroads", source: "Prospect", year: 2016},
+      { title: "Britain Should Deliberate Before It Votes on Europe (with James Fishkin)", source: "Huffington Post", year: 2015},
+      { title: "At the Crossroads", source: "London Review of Books", year: 2010},
+      { title: "Why the Lib Dems Do Well Out of TV Debates (with James Fishkin)", source: "The Guardian", year: 2010},
+    ]
+  },
+  {
+    id: "cambridge",
+    label: "Cambridge",
+    country: "UK",
+    lat: 52.20553 + 0.2,
+    lon: 0.11866 + 0.2,
+    color: "#5B4B00",
+    publications: [
+      { title:"Ashby Lecture, University of Cambridge"},
+    ]
+  },
+  {
+    id: "brussels",
+    label: "Brussels",
+    country: "Belgium",
+    lat: 50.84674,
+    lon: 4.35249,
+    color: "#0066CC",
+    publications: [
+      { title: "Reorganizing NATO: Europe’s Last Chance to Preserve Fundamental Rights", source: "The European Commission for Democracy (Venice Commission)", year: 2016},
+      { title: "Three Paths to Constitutionalism – and the Crisis of the European Union", source:"45 British Journal of Political Science 705", year: 2015},
+      { title: "How to Reinvigorate Nato and Deter Putin’s Aggression", source: "Politico", year: 2022},
+      { title: "Face à Trump, comment l’Europe peut protége l’OTAN", source: "Le Monde", year: 2018},
+      { title: "Der neue Nato-deal", source: "Süddeutsche Zeitung", year: 2017},
+      { title: "What Happens to NATO Now?", source: "The Atlantic", year: 2016},
+      { title: "Europa, hilf dir selbst! (Europe, Take Care of Yourself!)", soucre: "Sueddeutsche Zeitung", year: 2015},
+      { title: "Europe Needs to Provide for its Own Defense", source: "Los Angeles Times", year: 2014},
+      { title: "Obama Should Not Let Europe Slip Away", source: "Washington Pos", year: 2014},
+      { title: "Making Up With Europe", source: "Los Angeles Times", year: 2013},
+      { title: "A United States of Europe?", source: "Los Angeles Times", year: 2011},
+    ]
+  },
+  {
+    id: "warsaw",
+    label: "Warsaw",
+    country: "Poland",
+    lat: 52.23337,
+    lon: 21.07115,
+    color: "#0066CC",
+    publications: [
+      { title: "The cooperation of Polish and American defenders of constitutional democracy is the foundation of  Polish national security", source: "Gazeta Wyborcza", year: 2018},
+      { title: "The Case for Constitutional Reform in Poland", source: "Yale Global Online", year: 2017},
+      { title: "Obama is Poland’s Only Hope (with Maciej Kisilowski)", source: "Foreign Policy", year: 2016},
+    ]
+  },
+  {
+    id: "athens",
+    label: "Athens",
+    country: "Greece",
+    lat: 37.97556,
+    lon: 23.73483,
+    color: "#0066CC",
+    publications: [
+      { title: "La Grèce masque la vraie crise de l’Europe", source: "Le Monde", year: 2015},
+    ]
+  },
+  {
+    id: "tripoli",
+    label: "Tripoli",
+    country: "Libya",
+    lat: 37.97556,
+    lon: 23.73483,
+    color: "#0066CC",
+    publications: [
+      { title: "It’s Not Up to the President to Impose a No Fly Zone Over Libya", source: "Huffington Post", year: 2011},
+    ]
+  },
+  {
+    id: "cairo",
+    label: "Cairo",
+    country: "Egypt",
+    lat: 30.04439,
+    lon: 31.23573,
+    color: "#0066CC",
+    publications: [
+      { title: "To Save Egypt, Drop the Presidenc", source: "New York Times", year: 2013},
+    ]
+  },
+  {
+    id: "tehran",
+    label: "Tehran",
+    country: "Iran",
+    lat: 35.68925,
+    lon: 51.38960,
+    color: "#0066CC",
+    publications: [
+      { title: "Nixon In Iran?", source: "Huffington Post", year: 2012},
+      { title: "The Legal Case Against Attacking Iran", source: "Los Angeles Times", year: 2012},
+    ]
+  },
+  {
+    id: "kabul",
+    label: "Kabul",
+    country: "Afghanistan",
+    lat: 34.52695,
+    lon: 69.18506,
+    color: "#0066CC",
+    publications: [
+      { title: "What Will Congress Do About Afghanistan? (with Oona Hathaway)", source: "Slate", year: 2009},
+    ]
+  },
+  {
+    id: "baghdad",
+    label: "Baghdad",
+    country: "Iraq",
+    lat: 33.30617,
+    lon: 44.38722,
+    color: "#0066CC",
+    publications: [
+      { title: "America Needs to Prepare for Early Iraq Pullout (with Oona Hathaway)", year: 2009},
+    ]
+  },
+  {
+    id: "ottawa",
+    label: "Ottawa",
+    country: "Canada",
+    lat: 45.42088,
+    lon: -75.69011,
+    color: "#0066CC",
+    publications: [
+      { title: "Canada at the Constitutional Crossroads (with Robert Charney)", source: "University of Toronto Law Journal, vol. 34, pp. 117-135", year: 1984},
+    ]
+  },
+  {
+    id: "philadelphia",
+    label: "Philadelphia",
+    country: "USA",
+    lat: 39.95272,
+    lon: -75.16353,
+    color: "#5B4B00",
+    publications: [
+      { title: "Roberts Lecture, University of Pennsylvania"},
+      { title: "Goldstone Lecture, University of Pennsylvania"},
+      { title: "Templeton Lecture, U.S. Constitution Center"}
+    ]
+  },
+  {
+    id: "cambridge",
+    label: "Cambridge",
+    country: "USA",
+    lat: 42.36563,
+    lon: -71.10400,
+    color: "#5B4B00",
+    publications: [
+      { title: "Holmes Lectures, Harvard Law School"},
+      { title: "Friedrich Lecture, Harvard University"}
+    ]
+  },
+  {
+    id: "new haven",
+    label: "New Haven",
+    country: "USA",
+    lat: 41.30821,
+    lon: -72.92505,
+    color: "#5B4B00",
+    publications: [
+      { title: "Jorde Lecture, Yale University and University of California, Berkeley"},
+      { title: "Storrs Lecture, Yale University"}
+    ]
+  },
+  {
+    id: "utah",
+    label: "Utah",
+    country: "USA",
+    lat: 39.42252,
+    lon: -111.71436,
+    color: "#5B4B00",
+    publications: [
+      { title: "Leary Lecture, University of Utah"},
+    ]
+  },
+  {
+    id: "durham",
+    label: "Durham",
+    country: "USA",
+    lat: 35.99665,
+    lon: -78.90181,
+    color: "#5B4B00",
+    publications: [
+      { title: "Currie Lecture, Duke University"},
+    ]
+  },
+  {
+    id: "bloomington",
+    label: "Bloomington",
+    country: "USA",
+    lat: 39.16704,
+    lon: -86.53429,
+    color: "#5B4B00",
+    publications: [
+      { title: "Harris Lecture, University of Indiana"},
+    ]
+  },
+  {
+    id: "berkeley",
+    label: "Berkeley",
+    country: "USA",
+    lat: 37.87084,
+    lon: -122.27286,
+    color: "#5B4B00",
+    publications: [
+      { title: "Jorde Lecture, Yale University and University of California, Berkeley"},
+      { title: "Order of the Coif, Inaugural Lecture, University of California, Berkeley"}
+    ]
+  },
+  {
+    id: "princeton",
+    label: "Princeton",
+    country: "USA",
+    lat: 40.34970,
+    lon: -74.65974,
+    color: "#5B4B00",
+    publications: [
+      { title: "Tanner Lectures, Princeton University"},
+      { title: "Moffett Lecture, Princeton University"}
+    ]
+  },
+  {
+    id: "tucson",
+    label: "Tucson",
+    country: "USA",
+    lat: 32.22288,
+    lon: -110.97485,
+    color: "#5B4B00",
+    publications: [
+      { title: "Marks Lecture, University of Arizona"},
+    ]
+  },
+  {
+    id: "austin",
+    label: "Austin",
+    country: "USA",
+    lat: 30.27113,
+    lon: -97.74370,
+    color: "#5B4B00",
+    publications: [
+      { title: "Terrell Lecture, University of Texas"},
+    ]
+  },
+  {
+    id: "hartford",
+    label: "Hartford",
+    country: "USA",
+    lat: 41.76458,
+    lon: -72.69085,
+    color: "#5B4B00",
+    publications: [
+      { title: "University of Connecticut Law Review Award"},
+    ]
+  },
+  {
+    id: "washington, D.C.",
+    label: "Washington, D.C.",
+    country: "USA",
+    lat: 38.89504,
+    lon: -77.03654,
+    color: "#5B4B00",
+    publications: [
+      { title: "Hart Lecture, Georgetown University Law School"},
+      { title: "Visiting Professor, Environmental Protection Agency"},
+    ]
+  },
+  {
+    id: "charlottesville",
+    label: "Charlottesville",
+    country: "USA",
+    lat: 38.02931,
+    lon: -78.47668,
+    color: "#5B4B00",
+    publications: [
+      { title: "McCorkle Lecture, University of Virginia"},
+    ]
+  },
+  {
+    id: "taipei",
+    label: "Taipei",
+    country: "Taiwan",
+    lat: 25.03,
+    lon: 121.55,
+    color: "#F75000",
+    publications: [
+      { title: "Example title in Taipei", source: "Conference Z", year: 2022},
+    ]
+  }
+];
+
+/** =====================================================
+ *  地圖初始化
+ *  ===================================================== */
+var map = L.map('map', {
+  zoomControl: true,
+  minZoom: 2,
+  maxZoom: 6,
+  maxBounds: [[-65, -200], [90, 200]],
+  maxBoundsViscosity: 1.0
+}).setView([20, 10], 3);
+
+// 極簡無標籤底圖
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+  noWrap: true,
+  bounds: [[-90, -200], [90, 200]]
+}).addTo(map);
+
+// Cluster
+var markers = L.layerGroup();
+markers.addTo(map);
+
+// 右側面板 DOM
+var sidePanel = document.getElementById("sidePanel");
+var panelTitle = document.getElementById("panelTitle");
+var panelSubtitle = document.getElementById("panelSubtitle");
+var panelBody = document.getElementById("panelBody");
+document.getElementById("closePanel").addEventListener("click", function(){
+  sidePanel.style.display = "none";
+});
+
+// 依 count 調大小（你可自行調整）
+function radiusFromCount(count){
+  count = Number(count || 1);
+  return 3 + count * 0.5; // 原本比例
+}
+
+// 生成右側面板 HTML
+function renderPanel(p){
+  var pubs = Array.isArray(p.publications) ? p.publications : [];
+  var count = pubs.length;
+
+  panelTitle.textContent = p.label + (p.country ? (" · " + p.country) : "");
+  panelSubtitle.innerHTML =
+    '<span class="tag">Count: ' + count + '</span>' +
+    '<span class="tag">Lat: ' + Number(p.lat).toFixed(4) + '</span>' +
+    '<span class="tag">Lon: ' + Number(p.lon).toFixed(4) + '</span>';
+
+  if (count === 0) {
+    panelBody.innerHTML = "<div style='color:rgba(17,17,17,0.7); font-size:13px;'>No publications.</div>";
+    return;
+  }
+
+  // 依年份新到舊排序（可拿掉）
+  pubs = pubs.slice().sort(function(a,b){
+    return Number(b.year || 0) - Number(a.year || 0);
+  });
+
+  var html = "";
+  pubs.forEach(function(pub){
+    var title = pub.title || "(Untitled)";
+    var source = pub.source || "";
+    var year = pub.year != null ? pub.year : "";
+
+  var transHtml = "";
+if (pub.translations) {
+  transHtml =
+    '<div class="pub-meta" style="margin-top:6px;">' +
+      '<b>Translations:</b> ' + escapeHtml(pub.translations) +
+    '</div>';
+}
+    html +=
+  '<div class="pub">' +
+    '<div class="pub-title">' + escapeHtml(title) + '</div>' +
+    '<div class="pub-meta">' + escapeHtml(source) +
+      (year !== "" ? (" (" + escapeHtml(String(year)) + ")") : "") +
+    '</div>' +
+    transHtml +
+  '</div>';
+      
+  });
+
+  panelBody.innerHTML = html;
+}
+
+// 簡易防 XSS：面板用 innerHTML 前先 escape
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** =====================================================
+ *  產生點位
+ *  ===================================================== */
+locations.forEach(function(p){
+  var pubs = Array.isArray(p.publications) ? p.publications : [];
+  var count = pubs.length;
+
+  // 如果你想手動指定 count，也可以在資料中放 p.count，這裡優先使用它
+  var finalCount = (p.count != null) ? p.count : count;
+
+  var marker = L.circleMarker([p.lat, p.lon], {
+    radius: radiusFromCount(finalCount),
+    fillColor: p.color || "#333",
+    fillOpacity: 0.8,
+    stroke: false
+  });
+
+  // popup 簡短顯示
+  marker.bindPopup(escapeHtml(p.label) + " (Count: " + finalCount + ")");
+
+  // 點擊：開 popup + 更新右側面板
+  marker.on("click", function(){
+    this.openPopup();
+    renderPanel(p);
+    sidePanel.style.display = "block";
+  });
+
+  markers.addLayer(marker);
+});
+/** =====================================================
+ *  Legend 自動生成（依據 color + country）
+ *  ===================================================== */
+
+// ===== Legend（手動指定：顏色代表什麼）=====
+var legendItems = [
+  { color: "#5B4B00", label: "Lectures" },
+  { color: "#F75000", label: "Translations" },
+  { color: "#0066CC", label: "International Publications" }
+  // 想加就繼續加
+];
+
+var legend = L.control({ position: "bottomright" });
+
+legend.onAdd = function () {
+  var div = L.DomUtil.create("div");
+  var html =
+    '<div style="background:white;padding:12px 14px;border-radius:12px;' +
+    'box-shadow:0 6px 20px rgba(0,0,0,0.15);font-family:system-ui;' +
+    'font-size:13px;line-height:1.6;">';
+
+
+  legendItems.forEach(function(item){
+    html +=
+      '<div style="display:flex;align-items:center;margin-bottom:6px;">' +
+        '<span style="display:inline-block;width:12px;height:12px;background:' + item.color +
+        ';border-radius:50%;margin-right:8px;"></span>' +
+        item.label +
+      '</div>';
+  });
+
+  html += '</div>';
+  div.innerHTML = html;
+
+  // 讓點 legend 不會拖曳地圖（手感更好）
+  L.DomEvent.disableClickPropagation(div);
+  return div;
+};
+
+legend.addTo(map);
+</script>
+</body>
+</html>
