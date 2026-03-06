@@ -304,6 +304,17 @@ var locations = [
     ]
   },
   {
+    id: "chile",
+    label: "Chile Constitutional Assembly (2021-2022)",
+    country: "Chile",
+    lat:  -31.761336,
+    lon: -71.318770,
+    color: "#6F00D2",
+    publications: [
+      { title: "Deliberation Day (with James Fishkin)", source: "Yale University Press", year: 2004},
+    ]
+  },
+  {
     id: "frankfurt",
     label: "Frankfurt",
     country: "Germany",
@@ -664,7 +675,7 @@ var locations = [
     lon: -7.979460,
     color: "#6F00D2",
     publications: [
-      { title: "The Stakeholder Society (with Anne Alstott)", source: "Yale University Press", year: 1999},
+      { title: "Deliberation Day (with James Fishkin)", source: "Yale University Press", year: 2004},
     ]
   },
   {
@@ -1023,7 +1034,8 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
       'United States of America',
       'Seattle',
       'United Kingdom',
-      'Ireland'
+      'Ireland',
+      'Chile',
     ];
 
     var countryBorders = L.geoJSON(data, {
