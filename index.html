@@ -12,88 +12,15 @@
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <style>
-  body { margin:0; background:white; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans TC", sans-serif; }
-  #map { width:100%; height:100vh; }
+  body { margin:0; }
+  #map { height:100vh; }
 
-  /* 右側資訊面板 */
-  #sidePanel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 380px;
-    height: 100vh;
-    background: rgba(255,255,255,0.97);
-    border-left: 1px solid rgba(0,0,0,0.08);
-    box-shadow: -12px 0 30px rgba(0,0,0,0.12);
-    padding: 16px 16px;
-    box-sizing: border-box;
-    display: none;
-    overflow: auto;
-    z-index: 9999;
-  }
-  #sidePanel .topbar{
-    display:flex;
-    align-items:flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  #sidePanel .title {
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1.2;
-    margin: 0;
-  }
-  #sidePanel .subtitle{
-    margin-top: 6px;
-    font-size: 12px;
-    color: rgba(17,17,17,0.65);
-    line-height: 1.4;
-  }
-  #sidePanel .closeBtn {
-    border: 1px solid rgba(0,0,0,0.12);
-    background: white;
-    border-radius: 10px;
-    padding: 6px 10px;
-    cursor: pointer;
-    font-size: 12px;
-    flex: 0 0 auto;
-  }
-
-  .divider {
-    height: 1px;
-    background: rgba(0,0,0,0.08);
-    margin: 12px 0;
-  }
-
-  .pub {
-    padding: 10px 10px;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    background: #fff;
-  }
-  .pub .pub-title{
-    font-weight: 700;
-    font-size: 13px;
-    line-height: 1.4;
-    margin-bottom: 6px;
-  }
-  .pub .pub-meta{
-    font-size: 12px;
-    color: rgba(17,17,17,0.68);
-    line-height: 1.4;
-  }
-  .tag {
-    display:inline-block;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(0,0,0,0.06);
-    color: rgba(17,17,17,0.7);
-    margin-right: 6px;
+.my-legend {
+  margin-right: 450px !important;
+  margin-bottom: 180px !important;
   }
 </style>
+
 </head>
 
 <body>
@@ -1146,12 +1073,11 @@ var legendItems = [
 var legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function () {
-  var div = L.DomUtil.create("div");
+  var div = L.DomUtil.create("div", "my-legend");
   var html =
     '<div style="background:white;padding:12px 14px;border-radius:12px;' +
     'box-shadow:0 6px 20px rgba(0,0,0,0.15);font-family:system-ui;' +
     'font-size:13px;line-height:1.6;">';
-
 
   legendItems.forEach(function(item){
     html +=
@@ -1165,7 +1091,6 @@ legend.onAdd = function () {
   html += '</div>';
   div.innerHTML = html;
 
-  // 讓點 legend 不會拖曳地圖（手感更好）
   L.DomEvent.disableClickPropagation(div);
   return div;
 };
