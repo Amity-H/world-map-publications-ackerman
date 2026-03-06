@@ -1024,40 +1024,6 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/
   bounds: [[-90, -200], [90, 200]]
 }).addTo(map);
 
-fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-  .then(function(res) {
-    return res.json();
-  })
-  .then(function(data) {
-    var targetCountries = [
-      'Estonia',
-      'United States of America',
-      'Seattle',
-      'United Kingdom',
-      'Ireland',
-      'Chile',
-    ];
-
-    var countryBorders = L.geoJSON(data, {
-      filter: function(feature) {
-        return targetCountries.includes(feature.properties.name);
-      },
-      style: function(feature) {
-        return {
-          color: '#000000',
-          weight: 2,
-          fill: false,
-          opacity: 1
-        };
-      }
-    }).addTo(map);
-
-    console.log('已加入國界圖層:', countryBorders);
-  })
-  .catch(function(err) {
-    console.error('GeoJSON 載入失敗:', err);
-  });
-
 // Cluster
 var markers = L.layerGroup();
 markers.addTo(map);
