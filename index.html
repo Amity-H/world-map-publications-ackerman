@@ -19,6 +19,80 @@
   margin-right: 450px !important;
   margin-bottom: 180px !important;
   }
+#sidePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: white;
+  z-index: 2000;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  display: none;
+  overflow-y: auto;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(17,17,17,0.7);
+}
+
+.closeBtn {
+  border: none;
+  background: #eee;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.divider {
+  height: 1px;
+  background: #e5e5e5;
+  margin: 0 16px;
+}
+
+#panelBody {
+  padding: 16px;
+}
+
+.pub {
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.pub-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pub-meta {
+  font-size: 13px;
+  color: rgba(17,17,17,0.75);
+}
+
+.tag {
+  display: inline-block;
+  margin-right: 8px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f2f2f2;
+  font-size: 12px;
+}
+
 </style>
 
 </head>
@@ -114,7 +188,7 @@ var locations = [
     ]
   },
   {
-    id: "barcelona",
+    id: "barcelona_translations",
     label: "Barcelona",
     country: "Spain",
     lat: 41.38258,
@@ -126,7 +200,7 @@ var locations = [
     ]
   },
   {
-    id: "barcelona",
+    id: "barcelona_international publications",
     label: "Barcelona",
     country: "Spain",
     lat: 41.38258 + 0.8,
@@ -160,7 +234,7 @@ var locations = [
     ]
   },
   {
-    id: "rio de Janeiro",
+    id: "rio de Janeiro_translations",
     label: "Rio de Janeiro",
     country: "Brazil",
     lat: -22.91101,
@@ -171,7 +245,7 @@ var locations = [
     ]
   },
   {
-    id: "rio de Janeiro",
+    id: "rio de Janeiro_international publications",
     label: "Rio de Janeiro",
     country: "Brazil",
     lat: -22.91101 + 1.5,
@@ -182,7 +256,7 @@ var locations = [
     ]
   },
     {
-    id: "brasilia",
+    id: "brasilia_international publications",
     label: "Brasília",
     country: "Brazil",
     lat:  -10.33333,
@@ -192,6 +266,17 @@ var locations = [
       { title: "Brazil Needs a New Constitution", source: "Correio Braziliense", year: 2020},
       { title: "La Cour suprême brésilienne a le devoir de libérer Lula et d’annuler sa condamnation (The Brazilian Supreme Court Has the Duty to Free Lula from Prison and Annul His Conviction)", year: 2019},
       { title: "Zoom Lecture in Brazil: Constitutionalism in Crisis", year: 2020},
+    ]
+  },
+  {
+    id: "brasilia",
+    label: "Bolsa Família",
+    country: "Brazil",
+    lat:  -10.33333,
+    lon:  -53.20000,
+    color: "#6F00D2",
+    publications: [
+      { title: "The Stakeholder Society (with Anne Alstott)", source: "Yale University Press", year: 1999},
     ]
   },
   {
@@ -206,7 +291,7 @@ var locations = [
     ]
   },
   {
-    id: "santiago",
+    id: "santiago_translations",
     label: "Santiago",
     country: "Chile",
     lat: -33.43770,
@@ -218,7 +303,7 @@ var locations = [
     ]
   },
   {
-    id: "santiago",
+    id: "santiago_international publications",
     label: "Santiago",
     country: "Chile",
     lat: -33.43770 + 1.3,
@@ -281,7 +366,7 @@ var locations = [
     ]
   },
   {
-    id: "berlin",
+    id: "berlin_translations",
     label: "Berlin",
     country: "Germany",
     lat: 52.51739,
@@ -292,7 +377,7 @@ var locations = [
     ]
   },
   {
-    id: "berlin",
+    id: "berlin_international publications",
     label: "Berlin",
     country: "Germany",
     lat: 52.51739 + 1.3,
@@ -338,7 +423,7 @@ var locations = [
     ]
   },
   {
-    id: "rome",
+    id: "rome_lectures",
     label: "Rome",
     country: "Italy",
     lat: 41.89332 + 0.8,
@@ -350,7 +435,7 @@ var locations = [
     ]
   },
   {
-    id: "rome",
+    id: "rome_translations",
     label: "Rome",
     country: "Italy",
     lat: 41.89332,
@@ -385,7 +470,7 @@ var locations = [
     ]
   },
   {
-    id: "florence",
+    id: "florence_lectures",
     label: "Florence",
     country: "Italy",
     lat: 43.76980 + 1,
@@ -396,7 +481,7 @@ var locations = [
     ]
   },
   {
-    id: "florence",
+    id: "florence_translations",
     label: "Florence",
     country: "Italy",
     lat: 43.76980,
@@ -418,7 +503,7 @@ var locations = [
     ]
   },
   {
-    id: "vienna",
+    id: "vienna_lectures",
     label: "Vienna",
     country: "Austria",
     lat: 48.20835 + 0.8,
@@ -429,7 +514,7 @@ var locations = [
     ]
   },
   {
-    id: "vienna",
+    id: "vienna_translations",
     label: "Vienna",
     country: "Austria",
     lat: 48.20835,
@@ -462,7 +547,7 @@ var locations = [
     ]
   },
   {
-    id: "paris",
+    id: "paris_translations",
     label: "Paris",
     country: "France",
     lat: 48.85350,
@@ -482,7 +567,7 @@ var locations = [
     ]
   },
   {
-    id: "paris",
+    id: "paris_international publications",
     label: "Paris",
     country: "France",
     lat: 48.85350 + 0.8,
@@ -507,7 +592,7 @@ var locations = [
     ]
   },
   {
-    id: "tokyo",
+    id: "tokyo_translations",
     label: "Tokyo",
     country: "Japan",
     lat: 35.68,
@@ -515,13 +600,12 @@ var locations = [
     color: "#F75000",
     publications: [
       { title: "Three Paths to Constitutionalism – and the Crisis of the European Union", source: "45 British Journal of Political Science 705", year: 2015, translations:"Japanese translation: Horitsu Jiho (April 2015)."},
-      { title: "Example paper title B", source: "Journal Y", year: 2021},
       { title: "Preface, Deliberation Day (with James Fishkin)", source: "Japanese edition", year: 2015},
       { title: "America’s Tragic Turn in Germany and Japan", source: "Huffington Post", year: 2014, translations: "Japanese translation: Huffington Post."},
     ]
   },
   {
-    id: "tokyo",
+    id: "tokyo_international publications",
     label: "Tokyo",
     country: "Japan",
     lat: 35.68 + 1.3,
@@ -596,7 +680,7 @@ var locations = [
   },
   {
     id: "ireland",
-    label: "2013 Constitutional Convention &amp; 2016 Citizens’ Assembly",
+    label: "2013 Constitutional Convention; 2016 Citizens’ Assembly",
     country: "Ireland",
     lat: 52.865196,
     lon: -7.979460,
@@ -919,6 +1003,17 @@ var locations = [
     color: "#0066CC",
     publications: [
       { title: "A National Day of Deliberation? (with Jiunn-Rong Yeh)", source: "China Times", year: 2005},
+    ]
+  },
+  {
+    id: "pretoria",
+    label: "Social Grant Expansions",
+    country: "South Africa",
+    lat:  -25.74593,
+    lon:  28.18791,
+    color: "#6F00D2",
+    publications: [
+      { title: "The Stakeholder Society (with Anne Alstott)", source: "Yale University Press", year: 1999},
     ]
   },
   {
