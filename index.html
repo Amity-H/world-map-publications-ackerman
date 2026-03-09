@@ -16,9 +16,9 @@
   #map { height:100vh; }
 
 .my-legend {
-  margin-right: 450px !important;
-  margin-bottom: 180px !important;
-  }
+  z-index: 3000;
+}
+
 #sidePanel {
   position: fixed;
   top: 0;
@@ -1169,10 +1169,11 @@ var legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function () {
   var div = L.DomUtil.create("div", "my-legend");
+
   var html =
-    '<div style="background:white;padding:12px 14px;border-radius:12px;' +
+    '<div id="legendBox" style="background:white;padding:12px 14px;border-radius:12px;' +
     'box-shadow:0 6px 20px rgba(0,0,0,0.15);font-family:system-ui;' +
-    'font-size:13px;line-height:1.6;">';
+    'font-size:13px;line-height:1.6; cursor:move;">';
 
   legendItems.forEach(function(item){
     html +=
@@ -1187,10 +1188,62 @@ legend.onAdd = function () {
   div.innerHTML = html;
 
   L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+
+  // 等 legend 加進地圖後，啟用拖曳
+  setTimeout(function () {
+    makeDraggable(div);
+  }, 0);
+
   return div;
 };
 
 legend.addTo(map);
+
+// ===== 讓 legend 可拖曳 =====
+function makeDraggable(el) {
+  var isDragging = false;
+  var startX, startY, startLeft, startTop;
+
+  el.style.position = "fixed";
+  el.style.right = "auto";
+  el.style.bottom = "auto";
+
+  // 初始位置：右下角附近
+  var rect = el.getBoundingClientRect();
+  if (!el.style.left) {
+    el.style.left = (window.innerWidth - rect.width - 20) + "px";
+  }
+  if (!el.style.top) {
+    el.style.top = (window.innerHeight - rect.height - 20) + "px";
+  }
+
+  el.addEventListener("mousedown", function (e) {
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseFloat(el.style.left) || 0;
+    startTop = parseFloat(el.style.top) || 0;
+
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", function (e) {
+    if (!isDragging) return;
+
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+
+    el.style.left = (startLeft + dx) + "px";
+    el.style.top = (startTop + dy) + "px";
+  });
+
+  document.addEventListener("mouseup", function () {
+    isDragging = false;
+    document.body.style.userSelect = "";
+  });
+}
 </script>
 </body>
 </html>
